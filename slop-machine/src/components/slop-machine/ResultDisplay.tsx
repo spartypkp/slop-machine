@@ -3,24 +3,27 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GenerationResult } from '@/types/slop-machine';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Check, Copy, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Check, Copy, Download, Image as ImageIcon, X } from 'lucide-react';
 import { useState } from 'react';
 
 interface ResultDisplayProps {
 	result: GenerationResult | null;
 	isVisible: boolean;
-	onGenerateVideo?: () => void;
-	isGeneratingVideo?: boolean;
+	onGenerateImage?: () => void;
+	isGeneratingImage?: boolean;
+	onClose?: () => void;
 }
 
 export default function ResultDisplay({
 	result,
 	isVisible,
-	onGenerateVideo,
-	isGeneratingVideo = false
+	onGenerateImage,
+	isGeneratingImage = false,
+	onClose
 }: ResultDisplayProps) {
 	const [copied, setCopied] = useState(false);
+	const [imageLoaded, setImageLoaded] = useState(false);
 
 	const handleCopy = async () => {
 		if (!result) return;
@@ -34,149 +37,221 @@ export default function ResultDisplay({
 		}
 	};
 
+	const handleDownloadImage = () => {
+		if (!result?.imageBase64) return;
+
+		const link = document.createElement('a');
+		link.href = `data:image/png;base64,${result.imageBase64}`;
+		link.download = `slop-machine-${result.id}.png`;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	};
+
+	if (!isVisible || !result) return null;
+
 	return (
-		<AnimatePresence>
-			{isVisible && result && (
-				<motion.div
-					initial={{ opacity: 0, y: 50, scale: 0.9 }}
-					animate={{ opacity: 1, y: 0, scale: 1 }}
-					exit={{ opacity: 0, y: 50, scale: 0.9 }}
-					transition={{
-						duration: 0.6,
-						ease: 'easeOut',
-						delay: 0.2
-					}}
-					className="w-full max-w-2xl mx-auto"
-				>
-					<Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-200 dark:border-purple-700 shadow-xl">
-						<CardHeader className="text-center pb-4">
-							<motion.div
-								initial={{ scale: 0 }}
-								animate={{ scale: 1 }}
-								transition={{ delay: 0.4, duration: 0.5, type: 'spring' }}
-								className="flex justify-center mb-2"
-							>
-								<Sparkles className="w-8 h-8 text-purple-500" />
-							</motion.div>
-							<CardTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-								Your Slop Creation!
-							</CardTitle>
-						</CardHeader>
+		<motion.div
+			initial={{ opacity: 0, scale: 0.8 }}
+			animate={{ opacity: 1, scale: 1 }}
+			exit={{ opacity: 0, scale: 0.8 }}
+			transition={{ duration: 0.3 }}
+			className="w-full mx-auto"
+		>
+			<Card className="bg-gradient-to-br from-yellow-100 to-yellow-200 border-4 border-yellow-400 shadow-2xl relative">
+				{/* Close Button */}
+				{onClose && (
+					<motion.button
+						whileHover={{ scale: 1.1 }}
+						whileTap={{ scale: 0.95 }}
+						onClick={onClose}
+						className="absolute -top-2 -right-2 w-10 h-10 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center shadow-lg border-2 border-white transition-colors z-10"
+					>
+						<X className="w-5 h-5" />
+					</motion.button>
+				)}
 
-						<CardContent className="space-y-6">
-							{/* Generated Prompt */}
-							<motion.div
-								initial={{ opacity: 0, x: -20 }}
-								animate={{ opacity: 1, x: 0 }}
-								transition={{ delay: 0.6, duration: 0.5 }}
-								className="bg-white dark:bg-gray-800 rounded-lg p-4 border-2 border-gray-200 dark:border-gray-600"
-							>
-								<h3 className="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200">
-									Generated Prompt:
-								</h3>
-								<p className="text-gray-700 dark:text-gray-300 text-lg leading-relaxed">
-									{result.combinedPrompt}
-								</p>
-							</motion.div>
+				<CardHeader className="text-center pb-4 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-t-xl">
+					<motion.div
+						initial={{ scale: 0, rotate: -180 }}
+						animate={{ scale: 1, rotate: 0 }}
+						transition={{ delay: 0.2, duration: 0.6, type: 'spring' }}
+						className="flex justify-center mb-2"
+					>
+						<div className="text-4xl">🎰</div>
+					</motion.div>
+					<CardTitle className="text-2xl font-bold tracking-wide">
+						🎉 JACKPOT! 🎉
+					</CardTitle>
+					<div className="text-sm opacity-90">Your Creative Combination</div>
+				</CardHeader>
 
-							{/* Component Breakdown */}
-							<motion.div
-								initial={{ opacity: 0, x: 20 }}
-								animate={{ opacity: 1, x: 0 }}
-								transition={{ delay: 0.8, duration: 0.5 }}
-								className="grid grid-cols-1 md:grid-cols-3 gap-4"
-							>
-								<div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-700">
-									<h4 className="font-medium text-blue-800 dark:text-blue-300 mb-1">
-										🎭 Character
-									</h4>
-									<p className="text-sm text-blue-700 dark:text-blue-400">
-										{result.character.text}
-									</p>
-								</div>
-
-								<div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-700">
-									<h4 className="font-medium text-green-800 dark:text-green-300 mb-1">
-										🎬 Action
-									</h4>
-									<p className="text-sm text-green-700 dark:text-green-400">
-										{result.action.text}
-									</p>
-								</div>
-
-								<div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 border border-orange-200 dark:border-orange-700">
-									<h4 className="font-medium text-orange-800 dark:text-orange-300 mb-1">
-										🌍 Setting
-									</h4>
-									<p className="text-sm text-orange-700 dark:text-orange-400">
-										{result.setting.text}
-									</p>
-								</div>
-							</motion.div>
-
-							{/* Action Buttons */}
-							<motion.div
-								initial={{ opacity: 0, y: 20 }}
-								animate={{ opacity: 1, y: 0 }}
-								transition={{ delay: 1, duration: 0.5 }}
-								className="flex flex-col sm:flex-row gap-3 justify-center"
-							>
-								<Button
-									onClick={handleCopy}
-									variant="outline"
-									className="flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800"
-								>
-									{copied ? (
-										<>
-											<Check className="w-4 h-4 text-green-500" />
-											Copied!
-										</>
-									) : (
-										<>
-											<Copy className="w-4 h-4" />
-											Copy Prompt
-										</>
-									)}
-								</Button>
-
-								{onGenerateVideo && (
-									<Button
-										onClick={onGenerateVideo}
-										disabled={isGeneratingVideo}
-										className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium px-6 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-									>
-										{isGeneratingVideo ? (
-											<>
-												<motion.div
-													animate={{ rotate: 360 }}
-													transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-													className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
-												/>
-												Generating...
-											</>
-										) : (
-											<>
-												<Sparkles className="w-4 h-4 mr-2" />
-												Generate Video
-											</>
-										)}
-									</Button>
+				<CardContent className="space-y-6 p-6">
+					{/* Generated Image */}
+					{result.imageBase64 && (
+						<motion.div
+							initial={{ opacity: 0, scale: 0.8 }}
+							animate={{ opacity: 1, scale: 1 }}
+							transition={{ delay: 0.3, duration: 0.6 }}
+							className="flex justify-center"
+						>
+							<div className="relative rounded-xl overflow-hidden shadow-lg border-4 border-yellow-400">
+								<img
+									src={`data:image/png;base64,${result.imageBase64}`}
+									alt={result.combinedPrompt}
+									className="max-w-full h-auto max-h-80 object-contain"
+									onLoad={() => setImageLoaded(true)}
+								/>
+								{!imageLoaded && (
+									<div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+										<motion.div
+											animate={{ rotate: 360 }}
+											transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+											className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full"
+										/>
+									</div>
 								)}
-							</motion.div>
+							</div>
+						</motion.div>
+					)}
 
-							{/* Timestamp */}
-							<motion.div
-								initial={{ opacity: 0 }}
-								animate={{ opacity: 1 }}
-								transition={{ delay: 1.2, duration: 0.5 }}
-								className="text-center text-xs text-gray-500 dark:text-gray-400"
+					{/* Generated Prompt */}
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ delay: 0.4, duration: 0.5 }}
+						className="bg-black rounded-xl p-4 border-2 border-yellow-400"
+					>
+						<h3 className="text-lg font-bold mb-3 text-yellow-400 font-mono">
+							🎯 GENERATED PROMPT:
+						</h3>
+						<p className="text-green-400 font-mono text-base leading-relaxed">
+							{result.combinedPrompt}
+						</p>
+					</motion.div>
+
+					{/* Component Breakdown - Slot Machine Style */}
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ delay: 0.6, duration: 0.5 }}
+						className="grid grid-cols-3 gap-3"
+					>
+						<div className="bg-gradient-to-b from-red-500 to-red-600 text-white rounded-lg p-3 border-2 border-red-400 shadow-lg">
+							<h4 className="font-bold text-center mb-1 text-xs">
+								🎭 CHARACTER
+							</h4>
+							<p className="text-xs text-center leading-tight">
+								{result.character.text}
+							</p>
+							{result.character.rarity !== 'common' && (
+								<div className="text-xs text-center mt-1 opacity-80 capitalize">
+									✨ {result.character.rarity}
+								</div>
+							)}
+						</div>
+
+						<div className="bg-gradient-to-b from-blue-500 to-blue-600 text-white rounded-lg p-3 border-2 border-blue-400 shadow-lg">
+							<h4 className="font-bold text-center mb-1 text-xs">
+								🎬 ACTION
+							</h4>
+							<p className="text-xs text-center leading-tight">
+								{result.action.text}
+							</p>
+							{result.action.rarity !== 'common' && (
+								<div className="text-xs text-center mt-1 opacity-80 capitalize">
+									✨ {result.action.rarity}
+								</div>
+							)}
+						</div>
+
+						<div className="bg-gradient-to-b from-green-500 to-green-600 text-white rounded-lg p-3 border-2 border-green-400 shadow-lg">
+							<h4 className="font-bold text-center mb-1 text-xs">
+								🌍 SETTING
+							</h4>
+							<p className="text-xs text-center leading-tight">
+								{result.setting.text}
+							</p>
+							{result.setting.rarity !== 'common' && (
+								<div className="text-xs text-center mt-1 opacity-80 capitalize">
+									✨ {result.setting.rarity}
+								</div>
+							)}
+						</div>
+					</motion.div>
+
+					{/* Action Buttons */}
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ delay: 0.8, duration: 0.5 }}
+						className="flex flex-wrap gap-3 justify-center"
+					>
+						<Button
+							onClick={handleCopy}
+							variant="outline"
+							className="flex items-center gap-2 bg-white hover:bg-gray-50 border-2 border-gray-400 font-bold"
+						>
+							{copied ? (
+								<>
+									<Check className="w-4 h-4 text-green-500" />
+									Copied!
+								</>
+							) : (
+								<>
+									<Copy className="w-4 h-4" />
+									Copy Prompt
+								</>
+							)}
+						</Button>
+
+						{result.imageBase64 && (
+							<Button
+								onClick={handleDownloadImage}
+								variant="outline"
+								className="flex items-center gap-2 bg-white hover:bg-gray-50 border-2 border-gray-400 font-bold"
 							>
-								Generated on {result.timestamp.toLocaleString()}
-							</motion.div>
-						</CardContent>
-					</Card>
-				</motion.div>
-			)}
-		</AnimatePresence>
+								<Download className="w-4 h-4" />
+								Download Image
+							</Button>
+						)}
+
+						{onGenerateImage && (
+							<Button
+								onClick={onGenerateImage}
+								disabled={isGeneratingImage}
+								className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold px-6 py-2 rounded-lg shadow-lg border-2 border-green-400 transition-all duration-200"
+							>
+								{isGeneratingImage ? (
+									<>
+										<motion.div
+											animate={{ rotate: 360 }}
+											transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+											className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
+										/>
+										Generating...
+									</>
+								) : (
+									<>
+										<ImageIcon className="w-4 h-4 mr-2" />
+										{result.imageBase64 ? 'Generate New Image' : 'Generate Image'}
+									</>
+								)}
+							</Button>
+						)}
+					</motion.div>
+
+					{/* Timestamp */}
+					<motion.div
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						transition={{ delay: 1, duration: 0.5 }}
+						className="text-center text-xs text-gray-600 font-mono"
+					>
+						Generated: {result.timestamp.toLocaleString()}
+					</motion.div>
+				</CardContent>
+			</Card>
+		</motion.div>
 	);
 } 

@@ -1,5 +1,5 @@
 import { generateId } from '@/lib/utils/random';
-import { GenerationResult, SlopMachineState, WheelItem } from '@/types/slop-machine';
+import { GenerationResult, ImageGenerationResponse, SlopMachineState, WheelItem } from '@/types/slop-machine';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -8,9 +8,11 @@ interface SlopMachineStore extends SlopMachineState {
 	setWheelSpinning: (wheelId: keyof SlopMachineState['wheels'], isSpinning: boolean) => void;
 	setWheelResult: (wheelId: keyof SlopMachineState['wheels'], item: WheelItem) => void;
 	addGeneration: (character: WheelItem, action: WheelItem, setting: WheelItem) => void;
+	updateGenerationWithImage: (generationId: string, imageBase64: string) => void;
 	clearCurrentGeneration: () => void;
-	setGeneratingVideo: (isGenerating: boolean) => void;
+	setGeneratingImage: (isGenerating: boolean) => void;
 	resetWheels: () => void;
+	generateImage: (prompt: string) => Promise<void>;
 
 	// Getters
 	getAllWheelsSpinning: () => boolean;
@@ -32,7 +34,7 @@ const initialState: SlopMachineState = {
 	},
 	generationHistory: [],
 	currentGeneration: null,
-	isGeneratingVideo: false
+	isGeneratingImage: false
 };
 
 export const useSlopMachineStore = create<SlopMachineStore>()(
@@ -82,11 +84,56 @@ export const useSlopMachineStore = create<SlopMachineStore>()(
 				store.addRecentItem('settings', setting.id);
 			},
 
+			updateGenerationWithImage: (generationId, imageBase64) =>
+				set((state) => ({
+					generationHistory: state.generationHistory.map(gen =>
+						gen.id === generationId ? { ...gen, imageBase64 } : gen
+					),
+					currentGeneration:
+						state.currentGeneration?.id === generationId
+							? { ...state.currentGeneration, imageBase64 }
+							: state.currentGeneration
+				})),
+
 			clearCurrentGeneration: () =>
 				set({ currentGeneration: null }),
 
-			setGeneratingVideo: (isGenerating) =>
-				set({ isGeneratingVideo: isGenerating }),
+			setGeneratingImage: (isGenerating) =>
+				set({ isGeneratingImage: isGenerating }),
+
+			generateImage: async (prompt: string) => {
+				set({ isGeneratingImage: true });
+
+				try {
+					const response = await fetch('/api/generate-image', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({ prompt })
+					});
+
+					if (!response.ok) {
+						throw new Error(`HTTP error! status: ${response.status}`);
+					}
+
+					const data: ImageGenerationResponse = await response.json();
+
+					if (data.success && data.imageBase64) {
+						const state = get();
+						if (state.currentGeneration) {
+							get().updateGenerationWithImage(state.currentGeneration.id, data.imageBase64);
+						}
+					} else {
+						throw new Error(data.error || 'Failed to generate image');
+					}
+				} catch (error) {
+					console.error('Error generating image:', error);
+					// You might want to add error handling to the state
+				} finally {
+					set({ isGeneratingImage: false });
+				}
+			},
 
 			resetWheels: () =>
 				set((state) => ({

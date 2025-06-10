@@ -1,7 +1,7 @@
 export interface WheelItem {
 	id: string;
 	text: string;
-	rarity: 'common' | 'uncommon' | 'rare' | 'epic';
+	rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 	weight: number;
 }
 

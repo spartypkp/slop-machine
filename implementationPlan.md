@@ -184,7 +184,7 @@ interface GenerationResult {
 export const wheelData: WheelCategory[] = [
   {
     id: 'characters',
-    name: 'Characters',
+    name: 'Character',
     emoji: '🎭',
     items: [
       { id: 'c1', text: 'A confused penguin', rarity: 'common', weight: 10 },

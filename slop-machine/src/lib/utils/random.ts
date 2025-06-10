@@ -42,10 +42,12 @@ export function getSpinRotation(finalIndex: number, wheelLength: number, minRota
 }
 
 /**
- * Get random delay for staggered wheel spins
+ * Get random delay for staggered wheel spins with more variation
  */
 export function getStaggerDelay(wheelIndex: number): number {
-	return wheelIndex * 0.2; // 200ms delay between wheels
+	const baseDelay = wheelIndex * 0.3; // 300ms base delay between wheels
+	const variation = (Math.random() - 0.5) * 0.2; // ±100ms random variation
+	return Math.max(0, baseDelay + variation);
 }
 
 /**
@@ -68,4 +70,23 @@ export function filterRecentItems(items: WheelItem[], recentIds: string[], maxRe
 
 	// If all items are filtered out, return original array
 	return filtered.length > 0 ? filtered : items;
+}
+
+/**
+ * Shuffle an array using Fisher-Yates algorithm (better than sort + random)
+ */
+export function shuffleArray<T>(array: T[]): T[] {
+	const shuffled = [...array];
+	for (let i = shuffled.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+	}
+	return shuffled;
+}
+
+/**
+ * Get random initial wheel position (0-based index)
+ */
+export function getRandomInitialPosition(wheelLength: number): number {
+	return Math.floor(Math.random() * wheelLength);
 } 
